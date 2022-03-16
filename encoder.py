@@ -65,12 +65,17 @@ def terminated_code_generator(u, n, states, nsd, out):
         if i == len(u):
             last_state = next_state
     t = 0
+    # print('last_state: ', last_state)
     while t < n:
         i_d = states.index(last_state)
-        last_state.insert(0, 0)
-        last_state.pop()
-        codeword = codeword + out[i_d][0]
-        u.append(0)
+        # print(t, out[i_d])
+        # print(t, nsd[i_d], '\n')
+        next_s = last_state.copy()
+        next_s.insert(0, 0)
+        next_s.pop()
+        codeword = codeword + out[i_d][nsd[i_d].index(next_s)]
+        u.append(in_nsd[i_d][nsd[i_d].index(next_s)][0])
+        last_state = next_s.copy()
         t += 1
     return codeword, u
 
@@ -91,6 +96,7 @@ def unterminated_code_generator(u_1, n, states, nsd, out):
         i += 1
 
     return codeword
+
 
 # snr_dB = 0.2
 R = 1/2
