@@ -255,6 +255,48 @@ def code_generator(u, n, states, nsd, out):
         t += 1
     return codeword
 
+def terminated_code_generator(u, n, states, nsd, out):
+    next_state = [0 for _ in range(n)]
+    codeword = []
+    i = 0
+    while i < len(u):
+        i_d = states.index(next_state)
+        if u[i] == 0:
+            next_state = nsd[i_d][0]
+            codeword = codeword + out[i_d][0]
+            # codeword.append(out[i_d]['0'][1])
+        if u[i] == 1:
+            next_state = nsd[i_d][1]
+            # codeword.append(out[i_d]['1'][0])
+            codeword = codeword + out[i_d][1]
+        i += 1
+        if i == len(u):
+            last_state = next_state
+    t = 0
+    while t < n:
+        i_d = states.index(last_state)
+        last_state.insert(0, 0)
+        last_state.pop()
+        codeword = codeword + out[i_d][0]
+        u.append(0)
+        t += 1
+    return codeword, u
+
+def unterminated_code_generator(u_1, n, states, nsd, out):
+    next_state = [0 for _ in range(n)]
+    codeword = []
+    i = 0
+    while i < len(u_1):
+        i_d = states.index(next_state)
+        if u_1[i] == 0:
+            next_state = nsd[i_d][0]
+            codeword = codeword + out[i_d][0]
+        if u_1[i] == 1:
+            next_state = nsd[i_d][1]
+            codeword = codeword + out[i_d][1]
+        i += 1
+    return codeword
+
 def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divide_length):
     Gamma_l = []
     for j in range(K):
@@ -407,3 +449,46 @@ def extrinsic(LLR, La, r, Lc):
         extrinsic_value = LLR[i] - La[i] - Lc*r[2*i]
         extrinsic_list.append(round(extrinsic_value, 4))
     return extrinsic_list
+
+def puncture_turbo_code_generator(u, shuffle_index, n, states, nsd, out):
+    codeword, u1 = terminated_code_generator(u, n, states, nsd, out)
+    v0, v1 = [], []
+    for i in range(0, int(len(codeword) / 2)):
+        v0.append(codeword[2*i])
+        v1.append(codeword[2*i+1])
+    u_1 = [0 for i in range(len(u1))]
+    for j in range(len(u_1)):
+        u_1[j] = u1[shuffle_index[j]]
+    new_codeword = unterminated_code_generator(u_1, n, states, nsd, out)
+    v2 = []
+    for k in range(0, int(len(new_codeword) / 2)):
+        v2.append(new_codeword[2 * k + 1])
+    vp = []
+    for m in range(int(len(v1)/2)):
+        vp.append(v1[2*m])
+        vp.append(v2[2*m+1])
+    v = []
+    for a in range(len(vp)):
+        v.append(v0[a])
+        v.append(vp[a])
+    return v
+
+def unpuncture_turbo_code_generator(u, shuffle_index, n, states, nsd, out):
+    codeword, u1 = terminated_code_generator(u, n, states, nsd, out)
+    v0, v1 = [], []
+    for i in range(0, int(len(codeword) / 2)):
+        v0.append(codeword[2 * i])
+        v1.append(codeword[2 * i + 1])
+    u_1 = [0 for i in range(len(u1))]
+    for j in range(len(u_1)):
+        u_1[j] = u1[shuffle_index[j]]
+    new_codeword = unterminated_code_generator(u_1, n, states, nsd, out)
+    v2 = []
+    for k in range(0, int(len(new_codeword) / 2)):
+        v2.append(new_codeword[2 * k + 1])
+    v = []
+    for a in range(len(v0)):
+        v.append(v0[a])
+        v.append(v1[a])
+        v.append(v2[a])
+    return v
