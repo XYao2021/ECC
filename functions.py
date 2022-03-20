@@ -428,19 +428,6 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
     # print('the information bits/: ', L, '\n', len(L))
     return LLR, L
 
-def interleaved_example(m):
-    m_new = m.copy()
-    m_new[1] = m[2]
-    m_new[2] = m[1]
-    return m_new
-
-def interleaved(P2, info_bits):
-    random.shuffle(info_bits)
-    r_interleaved = []
-    for j in range(len(info_bits)):
-        r_interleaved += [info_bits[j], P2[j]]
-    return r_interleaved
-
 def extrinsic(LLR, La, r, Lc):
     extrinsic_list = []
     # print(r)

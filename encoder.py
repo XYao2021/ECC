@@ -129,9 +129,3 @@ print(new_codeword, len(new_codeword))
 
 for k in range(0, int(len(new_codeword)/2)):
     print(new_codeword[2*k+1])
-
-
-
-
-
-
