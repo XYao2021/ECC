@@ -41,14 +41,16 @@ def max_star(data):  # Max-log-MAP
 # def max_star(data):  # Max-log-MAP
 #     return max(data)
 
-def MIMO_detector(H, Y, LA, M, delta):
-    LA_com = LA.copy()
+def MIMO_detector(H, Y, LA, delta):  # QPSK: 00 -> 1; 01 -> j; 11 -> -1; 10 -> -j
     LD = []
     LD_extrinsic = []
+    # print(len(LA))
     for i in range(len(LA)):
-        LA_com.reomve(LA[i])
-        max0 = max1 = []
-        for item in itertools.product([0, 1], len(LA)-1):
+        LA_com = LA.copy()
+        LA_com.remove(LA[i])
+        max0, max1 = [], []
+        # print(len(LA_com))
+        for item in itertools.product([0, 1], repeat=len(LA_com)):
             item_map = []
             for bit in item:
                 if bit == 0:
@@ -56,19 +58,40 @@ def MIMO_detector(H, Y, LA, M, delta):
                 elif bit == 1:
                     item_map.append(1)
             he = 0
-            for j in range(len(LA_com)):
-                he += item_map[j]*LA_com[j]
-            item_0 = item_1 = list(item_map)
+            # print(item_map)
+            for m in range(len(LA_com)):
+                he += item_map[m]*LA_com[m]
+            item_0 = list(item_map).copy()
+            item_1 = list(item_map).copy()
             item_0.insert(i, -1)
             item_1.insert(i, 1)
-            S0 = np.split(np.array(item_0), M)
-            max0.append((-1 / 2 * delta) * (norm(Y - H @ S0), 2) ** 2 + (1 / 2) * he)
-            S1 = np.split(np.array(item_1), M)
-            max1.append((-1 / 2 * delta) * (norm(Y - H @ S1), 2) ** 2 + (1 / 2) * he)
+            print(item_0, item_1)
+            S0, S1 = [], []
+            for k in range(int(len(item_0)/2)):
+                if item_0[k:k+2] == [-1, -1]:
+                    S0.append(complex(1, 1))
+                elif item_0[k:k+2] == [-1, 1]:
+                    S0.append(complex(-1, 1))
+                elif item_0[k:k + 2] == [1, 1]:
+                    S0.append(complex(-1, -1))
+                elif item_0[k:k + 2] == [1, -1]:
+                    S0.append(complex(1, -1))
+                if item_1[k:k+2] == [-1, -1]:
+                    S1.append(complex(1, 1))
+                elif item_1[k:k+2] == [-1, 1]:
+                    S1.append(complex(-1, 1))
+                elif item_1[k:k + 2] == [1, 1]:
+                    S1.append(complex(-1, -1))
+                elif item_1[k:k + 2] == [1, -1]:
+                    S1.append(complex(1, -1))
+            print(i, S0, S1)
+            # S0 = np.split(np.array(item_0), len(H))
+            print(i, he, Y, H @ S0, H @ S1, Y-H @ S0, Y-H @ S1)
+            max0.append((-1 / (2 * delta)) * norm((Y - H @ S0), 2) ** 2 + (1 / 2) * he)
+            # S1 = np.split(np.array(item_1), len(H))
+            max1.append((-1 / (2 * delta)) * norm((Y - H @ S1), 2) ** 2 + (1 / 2) * he)
+        # print(max0, '\n', max1)
         LD.append(LA[i] + max_star(max1) - max_star(max0))
         LD_extrinsic.append(max_star(max1) - max_star(max0))
     return LD, LD_extrinsic  # LD_extrinsic goes to Turbo Decoder 1
-
-
-
 
