@@ -38,8 +38,23 @@ def max_star(data):  # Max-log-MAP
             # print(i, d)
         return round(max(d) + math.log(1 + math.exp(-abs(d[0] - d[1]))), 4)
 #
-# def max_star(data):  # Max-log-MAP
+# def max_star(data):  # Max
 #     return max(data)
+def QPSK_Mapping(data):
+    # print(data)
+    S = []
+    for k in range(int(len(data) / 2)):
+        # print(data[2*k:2*k+2])
+        if data[2*k:2*k+2] == [-1, -1]:
+            S.append(complex(1, 1))
+        if data[2*k:2*k+2] == [-1, 1]:
+            S.append(complex(-1, 1))
+        if data[2*k:2*k+2] == [1, 1]:
+            S.append(complex(-1, -1))
+        if data[2*k:2*k+2] == [1, -1]:
+            S.append(complex(1, -1))
+    # print(S, '\n')
+    return S
 
 def MIMO_detector(H, Y, LA, delta):  # QPSK: 00 -> 1; 01 -> j; 11 -> -1; 10 -> -j
     LD = []
@@ -65,32 +80,16 @@ def MIMO_detector(H, Y, LA, delta):  # QPSK: 00 -> 1; 01 -> j; 11 -> -1; 10 -> -
             item_1 = list(item_map).copy()
             item_0.insert(i, -1)
             item_1.insert(i, 1)
-            print(item_0, item_1)
-            S0, S1 = [], []
-            for k in range(int(len(item_0)/2)):
-                if item_0[k:k+2] == [-1, -1]:
-                    S0.append(complex(1, 1))
-                elif item_0[k:k+2] == [-1, 1]:
-                    S0.append(complex(-1, 1))
-                elif item_0[k:k + 2] == [1, 1]:
-                    S0.append(complex(-1, -1))
-                elif item_0[k:k + 2] == [1, -1]:
-                    S0.append(complex(1, -1))
-                if item_1[k:k+2] == [-1, -1]:
-                    S1.append(complex(1, 1))
-                elif item_1[k:k+2] == [-1, 1]:
-                    S1.append(complex(-1, 1))
-                elif item_1[k:k + 2] == [1, 1]:
-                    S1.append(complex(-1, -1))
-                elif item_1[k:k + 2] == [1, -1]:
-                    S1.append(complex(1, -1))
-            print(i, S0, S1)
+            # print(item_0, item_1)
+            S0 = QPSK_Mapping(item_0)
+            S1 = QPSK_Mapping(item_1)
+            # print(i, S0, S1)
             # S0 = np.split(np.array(item_0), len(H))
-            print(i, he, Y, H @ S0, H @ S1, Y-H @ S0, Y-H @ S1)
-            max0.append((-1 / (2 * delta)) * norm((Y - H @ S0), 2) ** 2 + (1 / 2) * he)
+            # print(i, norm((Y - H @ S0), 2) ** 2)
+            max0.append((-1 / (2 * delta)) * (norm((Y - H @ S0), 2) ** 2) + ((1 / 2) * he))
             # S1 = np.split(np.array(item_1), len(H))
-            max1.append((-1 / (2 * delta)) * norm((Y - H @ S1), 2) ** 2 + (1 / 2) * he)
-        # print(max0, '\n', max1)
+            max1.append((-1 / (2 * delta)) * (norm((Y - H @ S1), 2) ** 2) + ((1 / 2) * he))
+        # print(max_star(max1), max_star(max0), '\n')
         LD.append(LA[i] + max_star(max1) - max_star(max0))
         LD_extrinsic.append(max_star(max1) - max_star(max0))
     return LD, LD_extrinsic  # LD_extrinsic goes to Turbo Decoder 1
