@@ -41,7 +41,6 @@ def to_binary(Generate_function):
         G = NG.copy()
     return G
 
-
 def max_star(data):  # Max-log-MAP
     if len(data) < 2:
         result = data[0]
@@ -302,7 +301,6 @@ def unterminated_code_generator(u_1, n, states, nsd, out):
             # codeword.append(out[i_d]['1'][0])
             codeword = codeword + out[i_d][1]
         i += 1
-
     return codeword
 
 def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divide_length):

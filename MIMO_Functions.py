@@ -16,6 +16,25 @@ def de_interleaver(idx_list, data):
         shuffle_data[i] = data[idx_list[i]]
     return shuffle_data
 
+def max_star(data):  # Max-log-MAP
+    if len(data) < 2:
+        result = data[0]
+    elif len(data) == 2:
+        max_value = max(data)
+        result = round(max_value + math.log(1 + math.exp(-abs(data[0] - data[1]))), 4)
+    elif len(data) > 2:
+        d = data[0:2]
+        for i in range(2, len(data)):
+            d_max = round(max(d) + math.log(1 + math.exp(-abs(d[0] - d[1]))), 4)
+            d = [d_max, data[i]]
+            # print(i, d)
+        result = round(max(d) + math.log(1 + math.exp(-abs(d[0] - d[1]))), 4)
+    return result
+#
+# def max_star(data):  # Max-log-MAP
+#     result = max(data)
+#     return result
+
 def H_generator(M, N):
     H = [[0 for _ in range(N)] for _ in range(M)]
     # print(H)
@@ -40,7 +59,7 @@ def QPSK_Mapping(data):
     # print(S, '\n')
     return S
 
-def MIMO_detector(H, Y, LA, delta):  # QPSK: 00 -> 1; 01 -> j; 11 -> -1; 10 -> -j
+def MIMO_detector(H, Y, LA, sigma_square):  # QPSK: 00 -> 1; 01 -> j; 11 -> -1; 10 -> -j
     LD = []
     LD_extrinsic = []
     # print(len(LA))
@@ -70,11 +89,11 @@ def MIMO_detector(H, Y, LA, delta):  # QPSK: 00 -> 1; 01 -> j; 11 -> -1; 10 -> -
             # print(i, S0, S1)
             # S0 = np.split(np.array(item_0), len(H))
             # print(i, norm((Y - H @ S0), 2) ** 2)
-            max0.append((-1 / (2 * delta)) * (norm((Y - H @ S0), 2) ** 2) + ((1 / 2) * he))
+            max0.append((-1 / (2 * sigma_square)) * (norm((Y - H @ S0), 2) ** 2) + ((1 / 2) * he))
             # S1 = np.split(np.array(item_1), len(H))
-            max1.append((-1 / (2 * delta)) * (norm((Y - H @ S1), 2) ** 2) + ((1 / 2) * he))
+            max1.append((-1 / (2 * sigma_square)) * (norm((Y - H @ S1), 2) ** 2) + ((1 / 2) * he))
         # print(max_star(max1), max_star(max0), '\n')
-        LD.append(LA[i] + max_star(max1) - max_star(max0))
-        LD_extrinsic.append(max_star(max1) - max_star(max0))
+        LD.append(round(LA[i] + max_star(max1) - max_star(max0), 5))
+        LD_extrinsic.append(round(max_star(max1) - max_star(max0), 5))
     return LD, LD_extrinsic  # LD_extrinsic goes to Turbo Decoder 1
 
