@@ -315,9 +315,10 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
                 in_out = in_nsd[states.index(item)]
                 # print(j, item, next_state, OUT, in_out,'\n')
                 for k in range(len(next_state)):
+                    # print(OUT[k])
                     value = round(np.dot(recv, OUT[k]), 4)
                     gamma_l.append(
-                        [in_out[k][0], item, next_state[k], Gamma_star(in_out[k][0], La[j], Lc, value)])
+                        [in_out[k][0], item, next_state[k], Gamma_star(in_out[k][0], La[j], Lc, value), OUT[k][1]])
             Gamma_l.append(gamma_l)
 
         else:
@@ -330,7 +331,7 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
                     if next_state[k] in trellis_map[j + 1]:
                         value = round(np.dot(recv, OUT[next_state.index(next_state[k])]), 4)
                         gamma_l.append([in_out[next_state.index(next_state[k])][0], things, next_state[k],
-                                        Gamma_star(in_out[k][0], La[j], Lc, value)])
+                                        Gamma_star(in_out[k][0], La[j], Lc, value), OUT[k][1]])
             Gamma_l.append(gamma_l)
 
     Gamma_beta = Gamma_l.copy()
@@ -407,20 +408,36 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
     LLR = []
     BER = []
     for b in range(K):
-        in_0, in_1 = [], []
-        for item in Gamma_l[b]:
-            if item[0] == 0:
-                in_0.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
-                    states.index(item[2])] + item[3]), 4))
-            elif item[0] == 1:
-                in_1.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
-                    states.index(item[2])] + item[3]), 4))
-        L_l = round((max_star(in_1) - max_star(in_0)), 4)
-        LLR.append(L_l)
-        if L_l < 0:
-            L.append(0)
-        elif L_l > 0:
-            L.append(1)
+        if b % 2 != 0:
+            in_0, in_1 = [], []
+            for item in Gamma_l[b]:
+                if item[0] == 0:
+                    in_0.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                        states.index(item[2])] + item[3]), 4))
+                elif item[0] == 1:
+                    in_1.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                        states.index(item[2])] + item[3]), 4))
+            L_l = round((max_star(in_1) - max_star(in_0)), 4)
+            LLR.append(L_l)
+            if L_l < 0:
+                L.append(0)
+            elif L_l > 0:
+                L.append(1)
+        else:
+            in_0, in_1 = [], []
+            for item in Gamma_l[b]:
+                if item[4] == -1:
+                    in_0.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                        states.index(item[2])] + item[3]), 4))
+                elif item[4] == 1:
+                    in_1.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                        states.index(item[2])] + item[3]), 4))
+            L_l = round((max_star(in_1) - max_star(in_0)), 4)
+            LLR.append(L_l)
+            if L_l < 0:
+                L.append(0)
+            elif L_l > 0:
+                L.append(1)
         # if len(L) % divide_length == 0:   #change part for different length of codewords
         #     count = 0
         #     for i in range(len(L)):
@@ -506,6 +523,7 @@ def turbo_decoder(r, K, N, n, snr_d, La, nsd, states, out, in_nsd, shuffle_index
                 P1.append(0)
                 P2.append(r[(2 * i) + 1])
                 info_bits.append(r[2 * i])
+    # print('La: ', La)
     print('P1: ', P1, len(P1))
     print('P2: ', P2, len(P2))
     print('info: ', info_bits, len(info_bits))
@@ -520,7 +538,7 @@ def turbo_decoder(r, K, N, n, snr_d, La, nsd, states, out, in_nsd, shuffle_index
     print('r_org: ', r_org)
     print('r_interleaved', r_interleaved, '\n')
 
-    iter_num = 10
+    iter_num = 2
     i = 0
     BER = []
     while i in range(iter_num):

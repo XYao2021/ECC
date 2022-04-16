@@ -7,13 +7,13 @@ import random
 def interleaver(idx_list, data):
     shuffle_data = data.copy()
     for i in range(len(data)):
-        shuffle_data[idx_list[i]] = data[i]
+        shuffle_data[idx_list[i]-1] = data[i]
     return shuffle_data
 
 def de_interleaver(idx_list, data):
     shuffle_data = data.copy()
     for i in range(len(data)):
-        shuffle_data[i] = data[idx_list[i]]
+        shuffle_data[i] = data[idx_list[i]-1]
     return shuffle_data
 
 def max_star(data):  # Max-log-MAP
