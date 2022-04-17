@@ -60,12 +60,14 @@ def max_star(data):  # Max-log-MAP
 #     result = max(data)
 #     return result
 
-def Gamma_star(value1, la, lc, value2):
+def Gamma_star(value1, la, recv, p):
     if value1 == 0:
         v = -1
     else:
         v = 1
-    result = round((((1 / 2) * v) * la + ((1 / 2) * lc) * value2), 4)
+    result = round((1 / 2) * (v * la + v * recv[0] + p * recv[1]), 4)
+    # result = round((((1 / 2) * v) * la + ((1 / 2) * lc) * value2), 4)
+    # print(la, value1, v, recv, p, result, '\n')
     return result
 
 # author - Mathuranathan Viswanathan
@@ -307,6 +309,7 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
     Gamma_l = []
     for j in range(K):
         recv = r[(2 * j):(2 * j + 2)]
+        # print(j, recv)
         gamma_l = []
         if j < K - n:
             for item in trellis_map[j]:
@@ -318,7 +321,10 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
                     # print(OUT[k])
                     value = round(np.dot(recv, OUT[k]), 4)
                     gamma_l.append(
-                        [in_out[k][0], item, next_state[k], Gamma_star(in_out[k][0], La[j], Lc, value), OUT[k][1]])
+                        [in_out[k][0], item, next_state[k], Gamma_star(in_out[k][0], La[j], recv, OUT[k][1]), OUT[k][1]])
+                    # gamma_l.append(
+                    #     [in_out[k][0], item, next_state[k], Gamma_star(in_out[k][0], La[j], Lc, value),
+                    #      OUT[k][1]])
             Gamma_l.append(gamma_l)
 
         else:
@@ -331,9 +337,12 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
                     if next_state[k] in trellis_map[j + 1]:
                         value = round(np.dot(recv, OUT[next_state.index(next_state[k])]), 4)
                         gamma_l.append([in_out[next_state.index(next_state[k])][0], things, next_state[k],
-                                        Gamma_star(in_out[k][0], La[j], Lc, value), OUT[k][1]])
+                                        Gamma_star(in_out[k][0], La[j], recv, OUT[k][1]), OUT[k][1]])
+                        # gamma_l.append([in_out[next_state.index(next_state[k])][0], things, next_state[k],
+                        #                 Gamma_star(in_out[k][0], La[j], Lc, value), OUT[k][1]])
             Gamma_l.append(gamma_l)
 
+    # print(Gamma_l)
     Gamma_beta = Gamma_l.copy()
     trellis_map_beta = trellis_map.copy()
     Gamma_beta.reverse()
@@ -408,36 +417,32 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
     LLR = []
     BER = []
     for b in range(K):
-        if b % 2 != 0:
-            in_0, in_1 = [], []
-            for item in Gamma_l[b]:
-                if item[0] == 0:
-                    in_0.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
-                        states.index(item[2])] + item[3]), 4))
-                elif item[0] == 1:
-                    in_1.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
-                        states.index(item[2])] + item[3]), 4))
-            L_l = round((max_star(in_1) - max_star(in_0)), 4)
-            LLR.append(L_l)
-            if L_l < 0:
-                L.append(0)
-            elif L_l > 0:
-                L.append(1)
-        else:
-            in_0, in_1 = [], []
-            for item in Gamma_l[b]:
-                if item[4] == -1:
-                    in_0.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
-                        states.index(item[2])] + item[3]), 4))
-                elif item[4] == 1:
-                    in_1.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
-                        states.index(item[2])] + item[3]), 4))
-            L_l = round((max_star(in_1) - max_star(in_0)), 4)
-            LLR.append(L_l)
-            if L_l < 0:
-                L.append(0)
-            elif L_l > 0:
-                L.append(1)
+        in_0, in_1 = [], []
+        for item in Gamma_l[b]:
+            if item[0] == 0:
+                in_0.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                    states.index(item[2])] + item[3]), 4))
+            elif item[0] == 1:
+                in_1.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                    states.index(item[2])] + item[3]), 4))
+        L_l = round((max_star(in_1) - max_star(in_0)), 4)
+        LLR.append(L_l)
+        if L_l < 0:
+            L.append(0)
+        elif L_l > 0:
+            L.append(1)
+    LLR_p = []
+    for q in range(K):
+        inp_0, inp_1 = [], []
+        for item in Gamma_l[q]:
+            if item[4] == -1:
+                inp_0.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                    states.index(item[2])] + item[3]), 4))
+            elif item[4] == 1:
+                inp_1.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                    states.index(item[2])] + item[3]), 4))
+        L_l = round((max_star(inp_1) - max_star(inp_0)), 4)
+        LLR_p.append(L_l)
         # if len(L) % divide_length == 0:   #change part for different length of codewords
         #     count = 0
         #     for i in range(len(L)):
@@ -447,7 +452,7 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
         #         P = count/(len(L))
         #         BER.append([count, P])
         #         print('temporary BER: ', P)
-    # print('this is LLR: ', LLR)
+    print('this is LLR and LLR_p: ', LLR, LLR_p)
     # print('the information bits/: ', L, '\n', len(L))
     return LLR, L
 
@@ -524,9 +529,9 @@ def turbo_decoder(r, K, N, n, snr_d, La, nsd, states, out, in_nsd, shuffle_index
                 P2.append(r[(2 * i) + 1])
                 info_bits.append(r[2 * i])
     # print('La: ', La)
-    print('P1: ', P1, len(P1))
-    print('P2: ', P2, len(P2))
-    print('info: ', info_bits, len(info_bits))
+    # print('P1: ', P1, len(P1))
+    # print('P2: ', P2, len(P2))
+    # print('info: ', info_bits, len(info_bits))
     info_bits_interleaved = [0 for i in range(len(shuffle_index))]
     for k in range(len(shuffle_index)):
         info_bits_interleaved[k] = info_bits[shuffle_index[k] - 1]
@@ -535,8 +540,8 @@ def turbo_decoder(r, K, N, n, snr_d, La, nsd, states, out, in_nsd, shuffle_index
     for j in range(len(P2)):
         r_org += [info_bits[j], P1[j]]
         r_interleaved += [info_bits_interleaved[j], P2[j]]
-    print('r_org: ', r_org)
-    print('r_interleaved', r_interleaved, '\n')
+    # print('r_org: ', r_org)
+    # print('r_interleaved', r_interleaved, '\n')
 
     iter_num = 2
     i = 0
@@ -556,12 +561,12 @@ def turbo_decoder(r, K, N, n, snr_d, La, nsd, states, out, in_nsd, shuffle_index
         for j in range(len(shuffle_index)):
             extrinsic_2_interleaved[shuffle_index[j] - 1] = extrinsic_2[j]
         La = extrinsic_2_interleaved
-        print(i, 'this is LLR 1 result: ', BCJR1[0])
-        print(i, 'this is LLR 2 result: ', BCJR2[0])
+        # print(i, 'this is LLR 1 result: ', BCJR1[0])
+        # print(i, 'this is LLR 2 result: ', BCJR2[0])
         print(i, 'this is final extrinsic_1 value: ', extrinsic_1)
         print(i, 'this is final extrinsic_2 value: ', extrinsic_2)
-        print(i, 'this is deinterleaved extrinsic_2 value: ', extrinsic_2_interleaved)
-        print(i, 'new_La: ', La, '\n')
+        # print(i, 'this is deinterleaved extrinsic_2 value: ', extrinsic_2_interleaved)
+        # print(i, 'new_La: ', La, '\n')
         L = []
         for k in range(len(extrinsic_2_interleaved)):
             if extrinsic_2_interleaved[k] < 0:
