@@ -273,19 +273,19 @@ def terminated_code_generator(u, n, states, nsd, out, in_nsd):
         i += 1
         if i == len(u):
             last_state = next_state
-    t = 0
+    # t = 0
     # print('last_state: ', last_state)
-    while t < n:
-        i_d = states.index(last_state)
-        # print(t, out[i_d])
-        # print(t, nsd[i_d], '\n')
-        next_s = last_state.copy()
-        next_s.insert(0, 0)
-        next_s.pop()
-        codeword = codeword + out[i_d][nsd[i_d].index(next_s)]
-        u.append(in_nsd[i_d][nsd[i_d].index(next_s)][0])
-        last_state = next_s.copy()
-        t += 1
+    # while t < n:
+    #     i_d = states.index(last_state)
+    #     # print(t, out[i_d])
+    #     # print(t, nsd[i_d], '\n')
+    #     next_s = last_state.copy()
+    #     next_s.insert(0, 0)
+    #     next_s.pop()
+    #     codeword = codeword + out[i_d][nsd[i_d].index(next_s)]
+    #     u.append(in_nsd[i_d][nsd[i_d].index(next_s)][0])
+    #     last_state = next_s.copy()
+    #     t += 1
     return codeword, u
 
 def unterminated_code_generator(u_1, n, states, nsd, out):
@@ -305,7 +305,7 @@ def unterminated_code_generator(u_1, n, states, nsd, out):
         i += 1
     return codeword
 
-def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divide_length):
+def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La):
     Gamma_l = []
     for j in range(K):
         recv = r[(2 * j):(2 * j + 2)]
@@ -342,15 +342,16 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
                         #                 Gamma_star(in_out[k][0], La[j], Lc, value), OUT[k][1]])
             Gamma_l.append(gamma_l)
 
-    # print(Gamma_l)
+    # for char in Gamma_l:
+    #     print(Gamma_l.index(char), char, '\n')
     Gamma_beta = Gamma_l.copy()
     trellis_map_beta = trellis_map.copy()
     Gamma_beta.reverse()
     trellis_map_beta.reverse()
 
-    alpha = [-500 for i in range(len(states) - 1)]
+    alpha = [-50 for i in range(len(states) - 1)]
     alpha.insert(0, 0)
-    initialize_value_alpha = -500
+    initialize_value_alpha = -50
     initialize_value_beta = 0
     beta = [0 for i in range(len(states))]
     Alpha = [[] for i in range(K)]
@@ -415,8 +416,8 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
 
     L = []
     LLR = []
-    BER = []
     for b in range(K):
+        # print(b, Gamma_l[b])
         in_0, in_1 = [], []
         for item in Gamma_l[b]:
             if item[0] == 0:
@@ -427,54 +428,54 @@ def BCJR_decoder(K, r, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divi
                     states.index(item[2])] + item[3]), 4))
         L_l = round((max_star(in_1) - max_star(in_0)), 4)
         LLR.append(L_l)
+        # print(b, in_1, in_0, '\n')
         if L_l < 0:
             L.append(0)
         elif L_l > 0:
             L.append(1)
     LLR_p = []
     for q in range(K):
+        # print(q, Gamma_l[q])
         inp_0, inp_1 = [], []
         for item in Gamma_l[q]:
             if item[4] == -1:
-                inp_0.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                inp_0.append(round((Alpha[q][states.index(item[1])] + Beta[q + 1][
                     states.index(item[2])] + item[3]), 4))
             elif item[4] == 1:
-                inp_1.append(round((Alpha[b][states.index(item[1])] + Beta[b + 1][
+                inp_1.append(round((Alpha[q][states.index(item[1])] + Beta[q + 1][
                     states.index(item[2])] + item[3]), 4))
         L_l = round((max_star(inp_1) - max_star(inp_0)), 4)
         LLR_p.append(L_l)
-        # if len(L) % divide_length == 0:   #change part for different length of codewords
-        #     count = 0
-        #     for i in range(len(L)):
-        #         if L[i] != u[i]:
-        #             count += 1
-        #     if len(L) != 0:
-        #         P = count/(len(L))
-        #         BER.append([count, P])
-        #         print('temporary BER: ', P)
-    print('this is LLR and LLR_p: ', LLR, LLR_p)
-    # print('the information bits/: ', L, '\n', len(L))
-    return LLR, L
+    return LLR, LLR_p
 
-def extrinsic(LLR, La, r, Lc):
+def extrinsic(LLR, LLR_p, La, r, P, Lc):
     extrinsic_list = []
+    extrinsic_list_i = []
+    extrinsic_list_p = []
     # print(r)
     for i in range(len(LLR)):
         # print(i, 'this is value: ', LLR[i], La[i], Lc, r[2*i])
-        extrinsic_value = LLR[i] - La[i] - Lc*r[2*i]
-        extrinsic_list.append(round(extrinsic_value, 4))
-    return extrinsic_list
+        # extrinsic_value = LLR[i] - La[i] - Lc*r[2*i]
+        extrinsic_value_i = LLR[i] - La[i] - r[i]
+        extrinsic_value_p = LLR_p[i] - P[i]
+        extrinsic_list.append(round(extrinsic_value_i, 4))
+        extrinsic_list.append(round(extrinsic_value_p, 4))
+        extrinsic_list_i.append(round(extrinsic_value_i, 4))
+        extrinsic_list_p.append(round(extrinsic_value_p, 4))
+    return extrinsic_list_i, extrinsic_list_p, extrinsic_list
 
-def puncture_turbo_code_generator(u, shuffle_index, n, states, nsd, out):
-    codeword, u1 = terminated_code_generator(u, n, states, nsd, out)
+def puncture_turbo_code_generator(u, shuffle_index, n, states, nsd, out, in_nsd):
+    codeword, u0 = terminated_code_generator(u, n, states, nsd, out, in_nsd)
+    # print('codeword', codeword, u0)
     v0, v1 = [], []
     for i in range(0, int(len(codeword) / 2)):
         v0.append(codeword[2*i])
         v1.append(codeword[2*i+1])
-    u_1 = [0 for i in range(len(u1))]
-    for j in range(len(u_1)):
-        u_1[j] = u1[shuffle_index[j]]
-    new_codeword = unterminated_code_generator(u_1, n, states, nsd, out)
+    u_0 = [0 for i in range(len(u0))]
+    for j in range(len(u_0)):
+        u_0[j] = u0[shuffle_index[j] - 1]
+    new_codeword = unterminated_code_generator(u_0, n, states, nsd, out)
+    # print('new_codeword', new_codeword)
     v2 = []
     for k in range(0, int(len(new_codeword) / 2)):
         v2.append(new_codeword[2 * k + 1])
@@ -508,14 +509,15 @@ def unpuncture_turbo_code_generator(u, shuffle_index, n, states, nsd, out):
         v.append(v2[a])
     return v
 
-def turbo_decoder(r, K, N, n, snr_d, La, nsd, states, out, in_nsd, shuffle_index, u, divide_length):
+def turbo_decoder(r, K, N, n, snr_d, La, nsd, states, out, in_nsd, shuffle_index, R):
     Lc = 4 * snr_d
+    # print(N)
     trellis_map = trellis_map_generator(n, K, nsd, states)
     trellis_map_unterminated = trellis_map_generator_unterminated(n, K, nsd, states)
     P1, P2 = [], []
     info_bits = []
     for i in range(K):
-        if N % 3 == 0:
+        if R == 1/3:
             P1.append(r[(3 * i) + 1])
             P2.append(r[(3 * i) + 2])
             info_bits.append(r[3 * i])
@@ -543,42 +545,106 @@ def turbo_decoder(r, K, N, n, snr_d, La, nsd, states, out, in_nsd, shuffle_index
     # print('r_org: ', r_org)
     # print('r_interleaved', r_interleaved, '\n')
 
-    iter_num = 2
+    iter_num = 8
     i = 0
-    BER = []
     while i in range(iter_num):
-        BCJR1 = BCJR_decoder(K, r_org, n, states, nsd, out, in_nsd, trellis_map, La, Lc, u, divide_length)
-        extrinsic_1 = extrinsic(BCJR1[0], La, r_org, Lc)
-        extrinsic_1_interleaved = [0 for i in range(len(extrinsic_1))]
+        BCJR1 = BCJR_decoder(K, r_org, n, states, nsd, out, in_nsd, trellis_map, La)
+        extrinsic_1 = extrinsic(BCJR1[0], BCJR1[1], La, info_bits, P1, Lc)
+        # print(i, 'direct extrinsic_1: ', extrinsic_1[2], '\n')
+        extrinsic_1_interleaved = [0 for i in range(len(extrinsic_1[0]))]
         for j in range(len(shuffle_index)):
-            extrinsic_1_interleaved[j] = extrinsic_1[shuffle_index[j] - 1]
+            extrinsic_1_interleaved[j] = extrinsic_1[0][shuffle_index[j] - 1]
 
         BCJR2 = BCJR_decoder(K, r_interleaved, n, states, nsd, out, in_nsd, trellis_map_unterminated,
-                             extrinsic_1_interleaved, Lc, u,
-                             divide_length)
-        extrinsic_2 = extrinsic(BCJR2[0], extrinsic_1_interleaved, r_interleaved, Lc)
-        extrinsic_2_interleaved = [0 for i in range(len(extrinsic_2))]
-        for j in range(len(shuffle_index)):
-            extrinsic_2_interleaved[shuffle_index[j] - 1] = extrinsic_2[j]
+                             extrinsic_1_interleaved)
+        extrinsic_2 = extrinsic(BCJR2[0], BCJR2[1], extrinsic_1_interleaved, info_bits_interleaved, P2, Lc)
+        # print(i, 'direct extrinsic_2: ', extrinsic_2[2], '\n')
+        extrinsic_2_interleaved = [0 for i in range(len(extrinsic_2[0]))]
+        for a in range(len(shuffle_index)):
+            extrinsic_2_interleaved[shuffle_index[a] - 1] = extrinsic_2[0][a]
         La = extrinsic_2_interleaved
-        # print(i, 'this is LLR 1 result: ', BCJR1[0])
-        # print(i, 'this is LLR 2 result: ', BCJR2[0])
-        print(i, 'this is final extrinsic_1 value: ', extrinsic_1)
-        print(i, 'this is final extrinsic_2 value: ', extrinsic_2)
-        # print(i, 'this is deinterleaved extrinsic_2 value: ', extrinsic_2_interleaved)
+        # print(i, 'this is info extrinsic_2: ', extrinsic_2[0])
+        # print(i, 'this is new La: ', La, '\n')
+        # print(i, 'this is BCJR2: ', BCJR2[0])
+        # print(i, 'this is extrinsic_1_interleaved: ', extrinsic_1_interleaved, info_bits_interleaved)
+        # print(i, 'this is P1 result: ', extrinsic_1[1])
+        # print(i, 'this is P2 result: ', extrinsic_2[1])
+        # print(i, 'this is Decoder1 extrinsic_1 value: ', extrinsic_1[2])
+        # print(i, 'this is Decoder2 extrinsic_2 value: ', extrinsic_2[2])
         # print(i, 'new_La: ', La, '\n')
-        L = []
-        for k in range(len(extrinsic_2_interleaved)):
-            if extrinsic_2_interleaved[k] < 0:
-                L.append(0)
-            elif extrinsic_2_interleaved[k] > 0:
-                L.append(1)
-        count = 0
-        for m in range(len(L)):
-            if L[m] != u[m]:
-                count += 1
-        ber = count / len(u)
+        # L = []
+        # for k in range(len(extrinsic_2_interleaved)):
+        #     if extrinsic_2_interleaved[k] < 0:
+        #         L.append(0)
+        #     elif extrinsic_2_interleaved[k] > 0:
+        #         L.append(1)
+        # count = 0
+        # for m in range(len(L)):
+        #     if L[m] != u[m]:
+        #         count += 1
+        # ber = count / len(u)
         # print(i, 'temp BER: ', ber, len(L))
         i += 1
-    return extrinsic_2_interleaved
+        Le12 = []
+        for v in range(len(BCJR2[0])):
+            Le12.append(round(BCJR2[0][v] - info_bits_interleaved[v], 4))
+        # print(i, 'this is Le12: ', Le12)
+        # print(i, 'this is P1 result: ', extrinsic_1[1])
+        # print(i, 'this is P2 result: ', extrinsic_2[1])
+        message = []
+        Le_de = [0 for i in range(len(Le12))]
+        # P1_de = [0 for i in range(len(Le12))]
+        # P2_de = [0 for i in range(len(Le12))]
+        for b in range(len(shuffle_index)):
+            Le_de[shuffle_index[b] - 1] = Le12[b]
+        #     P1_de[shuffle_index[b] - 1] = extrinsic_1[1][b]
+        #     P2_de[shuffle_index[b] - 1] = extrinsic_2[1][b]
+        # print(i, 'this is Le12: ', Le_de)
+        # print(i, 'this is P1 result: ', P1_de)
+        # print(i, 'this is P2 result: ', P2_de)
+        for u in range(len(Le_de)):
+            message.append(Le_de[u])
+            if u % 2 == 0:
+                message.append(extrinsic_1[1][u])
+            else:
+                message.append(extrinsic_2[1][u])
+        # print(i, 'message back to MIMO: ', message)
+        soft_decision = []
+        LLR_soft = [0 for i in range(len(BCJR2[0]))]
+        for w in range(len(BCJR2[0])):
+            LLR_soft[shuffle_index[w] - 1] = BCJR2[0][w]
+        for x in range(len(Le_de)):
+            soft_decision.append(LLR_soft[x])
+            if x % 2 == 0:
+                soft_decision.append(BCJR1[1][x])
+            else:
+                soft_decision.append(BCJR2[1][x])
+        # print(i, 'soft LLR after decoder 2: ', BCJR2[0], BCJR1[1], BCJR2[1])
+        # print(i, 'soft LLR after decoder 2: ', soft_decision, '\n')
+        # if i == iter_num:
+        #     Le12 = []
+        #     for v in range(len(BCJR2[0])):
+        #         Le12.append(round(BCJR2[0][v] - info_bits_interleaved[v], 4))
+        #     # print(i, 'this is Le12: ', Le12)
+        #     # print(i, 'this is P1 result: ', extrinsic_1[1])
+        #     # print(i, 'this is P2 result: ', extrinsic_2[1])
+        #     message = []
+        #     Le_de = [0 for i in range(len(Le12))]
+        #     # P1_de = [0 for i in range(len(Le12))]
+        #     # P2_de = [0 for i in range(len(Le12))]
+        #     for b in range(len(shuffle_index)):
+        #         Le_de[shuffle_index[b] - 1] = Le12[b]
+        #     #     P1_de[shuffle_index[b] - 1] = extrinsic_1[1][b]
+        #     #     P2_de[shuffle_index[b] - 1] = extrinsic_2[1][b]
+        #     # print(i, 'this is Le12: ', Le_de)
+        #     # print(i, 'this is P1 result: ', P1_de)
+        #     # print(i, 'this is P2 result: ', P2_de)
+        #     for u in range(len(Le_de)):
+        #         message.append(Le_de[u])
+        #         if u % 2 == 0:
+        #             message.append(extrinsic_1[1][u])
+        #         else:
+        #             message.append(extrinsic_2[1][u])
+        # print(message)
+    return message, LLR_soft
 

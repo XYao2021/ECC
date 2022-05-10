@@ -4,13 +4,13 @@ import itertools
 from numpy .linalg import norm
 import random
 
-def interleaver(idx_list, data):
+def de_interleaver(idx_list, data):
     shuffle_data = data.copy()
     for i in range(len(data)):
         shuffle_data[idx_list[i]-1] = data[i]
     return shuffle_data
 
-def de_interleaver(idx_list, data):
+def interleaver(idx_list, data):
     shuffle_data = data.copy()
     for i in range(len(data)):
         shuffle_data[i] = data[idx_list[i]-1]
@@ -41,7 +41,8 @@ def H_generator(M, N):
     for i in range(M):
         for j in range(N):
             H[i][j] = complex(random.gauss(0, 1 / 2), random.gauss(0, 1 / 2))
-    return np.array(H)
+            # H[i][j] = complex(np.random.normal(0, 1/2, 1), np.random.normal(0, 1/2, 1))
+    return H
 
 def QPSK_Mapping(data):
     # print(data)
@@ -49,13 +50,14 @@ def QPSK_Mapping(data):
     for k in range(int(len(data) / 2)):
         # print(data[2*k:2*k+2])
         if data[2*k:2*k+2] == [-1, -1]:
-            S.append(complex(1, 1))
+            S.append(np.array(complex(1, 1)))
         if data[2*k:2*k+2] == [-1, 1]:
-            S.append(complex(-1, 1))
+            # S.append(complex(-1, 1))
+            S.append(np.array(complex(-1, 1)))
         if data[2*k:2*k+2] == [1, 1]:
-            S.append(complex(-1, -1))
+            S.append(np.array(complex(-1, -1)))
         if data[2*k:2*k+2] == [1, -1]:
-            S.append(complex(1, -1))
+            S.append(np.array(complex(1, -1)))
     # print(S, '\n')
     return S
 
